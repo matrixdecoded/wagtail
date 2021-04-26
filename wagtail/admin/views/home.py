@@ -118,7 +118,6 @@ class RecentEditsPanel:
 
     def __init__(self, request):
         self.request = request
-
         # Last n edited pages
         edit_count = getattr(settings, 'WAGTAILADMIN_RECENT_EDITS_LIMIT', 5)
         if connection.vendor == 'mysql':
@@ -127,11 +126,11 @@ class RecentEditsPanel:
             last_edits = PageRevision.objects.raw(
                 """
                 SELECT wp.* FROM
-                    wagtailcore_pagerevision wp JOIN (
+                    {prefix}wagtailcore_pagerevision wp JOIN (
                         SELECT max(created_at) AS max_created_at, page_id FROM
-                            wagtailcore_pagerevision WHERE user_id = %s GROUP BY page_id ORDER BY max_created_at DESC LIMIT %s
+                            {prefix}wagtailcore_pagerevision WHERE user_id = %s GROUP BY page_id ORDER BY max_created_at DESC LIMIT %s
                     ) AS max_rev ON max_rev.max_created_at = wp.created_at ORDER BY wp.created_at DESC
-                 """, [
+                 """.format(prefix=getattr(settings, "DB_PREFIX", "")), [
                     User._meta.pk.get_db_prep_value(self.request.user.pk, connection),
                     edit_count
                 ]
